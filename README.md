@@ -1,14 +1,9 @@
 
 # librfap
 
-proof-of-concept file transfer protocol - client side
+proof-of-concept file transfer protocol - client side.
 
-check out https://github.com/alexcoder04/rfap-server for ther server-side code.
+General specification: https://github.com/alexcoder04/rfap.
 
-## Planned features
-
- - [ ] basic client for testing
- - [ ] Python library with all the functions
- - [ ] fuse-based filesystem driver
- - [ ] support for the extra features that will be implemented on the server
+Server side: https://github.com/alexcoder04/rfap-go-server.
 

@@ -1,36 +1,68 @@
 
-import os
+import socket
+import yaml
+from .commands import *
 
 class Client:
-    def __init__(self, server_address, port=1634, public_key=None, private_key=None):
-        if public_key is None:
-            public_key = self.get_key_file(0)
-        if private_key is None:
-            private_key = self.get_key_file(1)
-        # TODO
+    def __init__(self, server_address, port=3333):
+        self.VERSION = 1
+        self.SUPPORTED_VERSIONS = [1]
+        self.ENDIANESS = "big"
+        self.SERVER_ADDRESS = server_address
+        self.PORT = port
+        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.socket.connect((self.SERVER_ADDRESS, self.PORT))
 
-    def send_command(self):
-        pass
+    def disconnect(self):
+        self.send_command(CMD_DISCONNECT, {})
+        self.socket.close()
 
-    def get_key_file(self, key):
-        if os.name != "posix":
-            raise Exception(f"{os.name} system is not supported")
-            # TODO other os support
-        XDG_DATA_HOME = os.getenv("XDG_DATA_HOME")
-        if XDG_DATA_HOME is None:
-            XDG_DATA_HOME = os.path.join(os.getenv("HOME"), ".local", "share")
-        DATA_DIR = os.path.join(XDG_DATA_HOME, "rfap")
-        if not os.path.isdir(DATA_DIR):
-            os.makedirs(DATA_DIR)
+    def send_command(self, command: int, metadata: dict, body: bytes = None):
+        # send version
+        self.socket.send(self.int_to_bytes(self.VERSION, 2))
 
-        if key == 1:
-            filename = "key.priv"
-        elif key == 0:
-            filename = "key.pub"
-        else:
-            raise Exception("invalid key")
+        # encode header
+        header = b""
+        header += self.int_to_bytes(command)
+        header += yaml.dump(metadata).encode("utf-8")
+        header += self.int_to_bytes(0, 32)
 
-        if os.path.isfile(os.path.join(DATA_DIR, filename)):
-            return os.path.join(DATA_DIR, filename)
-        raise Exception("key file does not exist")
+        # send header
+        self.socket.send(self.int_to_bytes(len(header)))
+        self.socket.send(header)
+
+        # send body
+        if body is None:
+            self.socket.send(self.int_to_bytes(0))
+            return
+        self.socket.send(self.int_to_bytes(len(body) + 32))
+        self.socket.send(body)
+        self.socket.send(self.int_to_bytes(0, 32))
+
+    def int_to_bytes(self, value: int, bytes_number: int = 4):
+        return value.to_bytes(bytes_number, self.ENDIANESS)
+
+    def bytes_to_int(self, value: bytes):
+        return int.from_bytes(value, self.ENDIANESS)
+
+    def recv_command(self):
+        # get version
+        version = self.bytes_to_int(self.socket.recv(2))
+        if version not in self.SUPPORTED_VERSIONS:
+            self.socket.close()
+            raise Exception("trying to receive packet of unsupported version")
+
+        # get header
+        header_length = self.bytes_to_int(self.socket.recv(4))
+        header_raw = self.socket.recv(header_length)
+        command = self.bytes_to_int(header_raw[:4])
+        metadata = yaml.load(header_raw[4:-32])
+        header_checksum = header_raw[-32:]
+
+        # get body
+        body_length = self.bytes_to_int(self.socket.recv(4))
+        body = self.socket.recv(body_length - 32)
+        body_checksum = self.socket.recv(32)
+
+        return version, command, metadata, header_checksum, body, body_checksum
 
