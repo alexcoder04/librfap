@@ -13,11 +13,8 @@ class Client:
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket.connect((self.SERVER_ADDRESS, self.PORT))
 
-    def disconnect(self):
-        self.send_command(CMD_DISCONNECT, {})
-        self.socket.close()
-
-    def send_command(self, command: int, metadata: dict, body: bytes = None):
+    # BASIC FUNCTIONS
+    def send_command(self, command: int, metadata: dict, body: bytes = None) -> None:
         # send version
         self.socket.send(self.int_to_bytes(self.VERSION, 2))
 
@@ -39,12 +36,6 @@ class Client:
         self.socket.send(body)
         self.socket.send(self.int_to_bytes(0, 32))
 
-    def int_to_bytes(self, value: int, bytes_number: int = 4):
-        return value.to_bytes(bytes_number, self.ENDIANESS)
-
-    def bytes_to_int(self, value: bytes):
-        return int.from_bytes(value, self.ENDIANESS)
-
     def recv_command(self):
         # get version
         version = self.bytes_to_int(self.socket.recv(2))
@@ -65,4 +56,26 @@ class Client:
         body_checksum = self.socket.recv(32)
 
         return version, command, metadata, header_checksum, body, body_checksum
+
+    # HELPER FUNCTIONS
+    def int_to_bytes(self, value: int, bytes_number: int = 4) -> bytes:
+        return value.to_bytes(bytes_number, self.ENDIANESS)
+
+    def bytes_to_int(self, value: bytes) -> int:
+        return int.from_bytes(value, self.ENDIANESS)
+
+    # IMPLEMENTATION OF RFAP COMMANDS
+    def rfap_ping(self) -> None:
+        self.send_command(CMD_PING, {})
+
+    def rfap_disconnect(self) -> None:
+        self.send_command(CMD_DISCONNECT, {})
+        self.socket.close()
+
+    def rfap_info(self, path: str) -> dict:
+        self.send_command(CMD_INFO, {"Path": path})
+        _, _, metadata, _, _, _ = self.recv_command()
+        return metadata
+
+    # TODO all other commands
 
