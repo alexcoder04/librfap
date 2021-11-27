@@ -4,7 +4,7 @@ import yaml
 from .commands import *
 
 class Client:
-    def __init__(self, server_address, port=3333):
+    def __init__(self, server_address, port=6700):
         self.VERSION = 1
         self.SUPPORTED_VERSIONS = [1]
         self.ENDIANESS = "big"
@@ -67,6 +67,7 @@ class Client:
     # IMPLEMENTATION OF RFAP COMMANDS
     def rfap_ping(self) -> None:
         self.send_command(CMD_PING, {})
+        self.recv_command()
 
     def rfap_disconnect(self) -> None:
         self.send_command(CMD_DISCONNECT, {})
