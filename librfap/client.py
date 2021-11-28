@@ -1,6 +1,7 @@
 
 import socket
 import yaml
+import time
 from .commands import *
 
 class Client:
@@ -15,8 +16,9 @@ class Client:
 
     # BASIC FUNCTIONS
     def send_command(self, command: int, metadata: dict, body: bytes = None) -> None:
-        # send version
-        self.socket.send(self.int_to_bytes(self.VERSION, 2))
+        all_data = b""
+        # version
+        all_data += self.int_to_bytes(self.VERSION, 2)
 
         # encode header
         header = b""
@@ -24,41 +26,47 @@ class Client:
         header += yaml.dump(metadata).encode("utf-8")
         header += self.int_to_bytes(0, 32)
 
-        # send header
-        self.socket.send(self.int_to_bytes(len(header)))
-        self.socket.send(header)
+        # header
+        all_data += self.int_to_bytes(len(header), 3)
+        all_data += header
 
-        # send body
+        # body
         if body is None:
-            self.socket.send(self.int_to_bytes(32))
-            self.socket.send(self.int_to_bytes(0, 32))
-            return
-        self.socket.send(self.int_to_bytes(len(body) + 32))
-        self.socket.send(body)
-        self.socket.send(self.int_to_bytes(0, 32))
+            all_data += self.int_to_bytes(32, 3)
+        else:
+            all_data += self.int_to_bytes(len(body), 3)
+            all_data += body
+
+        # send everything
+        self.socket.send(all_data)
 
     def recv_command(self):
-        # get version
-        version = self.bytes_to_int(self.socket.recv(2))
+        # receive everything
+        data = self.socket.recv(2+3+(16*1024*1024)+3+(16*1024*1024))
+
+        # version
+        version = self.bytes_to_int(data[:2])
         if version not in self.SUPPORTED_VERSIONS:
             self.socket.close()
-            raise Exception(f"trying to receive packet of unsupported version ({version})")
+            raise Exception(f"trying to receive packet of unsupported version (v{version})")
 
-        # get header
-        header_length = self.bytes_to_int(self.socket.recv(4))
-        header_raw = self.socket.recv(header_length)
-        command = self.bytes_to_int(header_raw[:4])
-        metadata = yaml.load(header_raw[4:-32], Loader=yaml.SafeLoader)
-        header_checksum = header_raw[-32:]
+        # header
+        header_length = self.bytes_to_int(data[2 : 2+3])
+        command = self.bytes_to_int(data[2+3 : 2+3+4])
+        header_raw = data[2+3+4 : 2+3+4+(header_length-4-32)]
+        try:
+            metadata = yaml.load(header_raw, Loader=yaml.SafeLoader)
+        except Exception as e:
+            print(e)
+            print("ERROR DECODING HEADER!")
+            self.socket.close()
+            exit(1)
+        header_checksum = data[2+3+(header_length-32) : 2+3+header_length]
 
-        # get body
-        body_length = self.bytes_to_int(self.socket.recv(4))
-        print("recv body with length", body_length)
-        if body_length > 32:
-            body = self.socket.recv(body_length - 32)
-        else:
-            body = b""
-        body_checksum = self.socket.recv(32)
+        # body
+        body_length = self.bytes_to_int(data[2+3+header_length : 2+3+header_length+3])
+        body = data[2+3+header_length+3 : 2+3+header_length+3+(body_length-32)]
+        body_checksum = data[2+3+header_length+3+(body_length-32) : 2+3+header_length+3+body_length]
 
         return version, command, metadata, header_checksum, body, body_checksum
 
