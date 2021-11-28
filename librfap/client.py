@@ -30,7 +30,8 @@ class Client:
 
         # send body
         if body is None:
-            self.socket.send(self.int_to_bytes(0))
+            self.socket.send(self.int_to_bytes(32))
+            self.socket.send(self.int_to_bytes(0, 32))
             return
         self.socket.send(self.int_to_bytes(len(body) + 32))
         self.socket.send(body)
@@ -41,18 +42,22 @@ class Client:
         version = self.bytes_to_int(self.socket.recv(2))
         if version not in self.SUPPORTED_VERSIONS:
             self.socket.close()
-            raise Exception("trying to receive packet of unsupported version")
+            raise Exception(f"trying to receive packet of unsupported version ({version})")
 
         # get header
         header_length = self.bytes_to_int(self.socket.recv(4))
         header_raw = self.socket.recv(header_length)
         command = self.bytes_to_int(header_raw[:4])
-        metadata = yaml.load(header_raw[4:-32])
+        metadata = yaml.load(header_raw[4:-32], Loader=yaml.SafeLoader)
         header_checksum = header_raw[-32:]
 
         # get body
         body_length = self.bytes_to_int(self.socket.recv(4))
-        body = self.socket.recv(body_length - 32)
+        print("recv body with length", body_length)
+        if body_length > 32:
+            body = self.socket.recv(body_length - 32)
+        else:
+            body = b""
         body_checksum = self.socket.recv(32)
 
         return version, command, metadata, header_checksum, body, body_checksum
