@@ -14,5 +14,9 @@ _, _, header, _, body, _ = client.recv_command()
 print("header is:", header)
 print("body is:", body)
 
+print("asking to read /")
+files = client.rfap_directory_read("/")
+print(files)
+
 client.rfap_disconnect()
 

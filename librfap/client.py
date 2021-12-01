@@ -64,7 +64,7 @@ class Client:
         header_checksum = data[2+4+(header_length-32) : 2+4+header_length]
 
         # body
-        body_length = self.bytes_to_int(data[2+4+header_length : 2+4+header_length+3])
+        body_length = self.bytes_to_int(data[2+4+header_length : 2+4+header_length+4])
         body = data[2+4+header_length+4 : 2+4+header_length+4+(body_length-32)]
         body_checksum = data[2+4+header_length+4+(body_length-32) : 2+4+header_length+4+body_length]
 
@@ -94,5 +94,21 @@ class Client:
         _, _, metadata, _, _, _ = self.recv_command()
         return metadata
 
-    # TODO all other commands
+    def rfap_file_read(self, path: str):
+        self.send_command(CMD_FILE_READ, {"Path": path})
+        time.sleep(0.2)
+        _, _, metadata, _, body, _ = self.recv_command()
+        if metadata["ErrorCode"] != 0:
+            return None
+        return body
+
+    def rfap_directory_read(self, path: str):
+        self.send_command(CMD_DIRECTORY_READ, {"Path": path})
+        time.sleep(0.2)
+        _, _, metadata, _, body, _ = self.recv_command()
+        if metadata["ErrorCode"] != 0:
+            return None
+        return [i for i in body.decode("utf-8").split("\n") if i != ""]
+
+    # TODO optional other commands
 
