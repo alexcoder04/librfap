@@ -3,9 +3,23 @@
 
 proof-of-concept file transfer protocol - client side.
 
-General specification: https://github.com/alexcoder04/rfap.
+## Installation
 
-Server side: https://github.com/alexcoder04/rfap-go-server.
+### Latest version from this repo with pip
 
-C# client library: https://github.com/BoettcherDasOriginal/rfab-cs-lib.
+```
+git clone https://github.com/alexcoder04/librfap
+pip3 install ./librfap
+```
+
+### Arch Linux PKGBUILD
+
+**Coming soon**
+
+## Related projects
+
+ - https://github.com/alexcoder04/rfap - general specification
+ - https://github.com/alexcoder04/rfap-pycli - CLI client based on this library
+ - https://github.com/alexcoder04/rfap-go-server - server side
+ - https://github.com/BoettcherDasOriginal/rfab-cs-lib - C# client library
 
