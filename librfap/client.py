@@ -1,18 +1,24 @@
+#!/usr/bin/env python3
 
+import sys
 import socket
 import yaml
 import time
 from .commands import *
 
 class Client:
-    def __init__(self, server_address, port=6700):
+    def __init__(self, server_address: str, port: int = 6700):
         self.VERSION = 1
         self.SUPPORTED_VERSIONS = [1]
         self.ENDIANESS = "big"
         self.SERVER_ADDRESS = server_address
         self.PORT = port
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.socket.connect((self.SERVER_ADDRESS, self.PORT))
+        try:
+            self.socket.connect((self.SERVER_ADDRESS, self.PORT))
+        except ConnectionRefusedError:
+            print("Error: This server seems not to be online")
+            sys.exit(1)
 
     # BASIC FUNCTIONS
     def send_command(self, command: int, metadata: dict, body: bytes = None) -> None:
@@ -59,8 +65,7 @@ class Client:
         except Exception as e:
             print(e)
             print("ERROR DECODING HEADER!")
-            self.socket.close()
-            exit(1)
+            return version, command, {}, None, b"", None
         header_checksum = data[2+4+(header_length-32) : 2+4+header_length]
 
         # body
@@ -88,8 +93,12 @@ class Client:
         time.sleep(0.2)
         self.socket.close()
 
-    def rfap_info(self, path: str) -> dict:
-        self.send_command(CMD_INFO, {"Path": path})
+    def rfap_info(self, path: str, verbose: bool = False) -> dict:
+        if verbose:
+            requireDetails = ["DirectorySize", "ElementsNumber"]
+        else:
+            requireDetails = []
+        self.send_command(CMD_INFO, {"Path": path, "RequestDetails": requireDetails})
         time.sleep(0.2)
         _, _, metadata, _, _, _ = self.recv_command()
         return metadata
@@ -99,16 +108,20 @@ class Client:
         time.sleep(0.2)
         _, _, metadata, _, body, _ = self.recv_command()
         if metadata["ErrorCode"] != 0:
-            return None
-        return body
+            return metadata, None
+        return metadata, body
 
-    def rfap_directory_read(self, path: str):
-        self.send_command(CMD_DIRECTORY_READ, {"Path": path})
+    def rfap_directory_read(self, path: str, verbose: bool = False):
+        if verbose:
+            requireDetails = ["DirectorySize", "ElementsNumber"]
+        else:
+            requireDetails = []
+        self.send_command(CMD_DIRECTORY_READ, {"Path": path, "RequestDetails": requireDetails})
         time.sleep(0.2)
         _, _, metadata, _, body, _ = self.recv_command()
         if metadata["ErrorCode"] != 0:
-            return None
-        return [i for i in body.decode("utf-8").split("\n") if i != ""]
+            return metadata, None
+        return metadata, [i for i in body.decode("utf-8").split("\n") if i != ""]
 
     # TODO optional other commands
 
