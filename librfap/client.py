@@ -120,7 +120,7 @@ class Client:
         time.sleep(0.2)
         _, _, metadata, _, body, _ = self.recv_command()
         if metadata["ErrorCode"] != 0:
-            return metadata, None
+            return metadata, []
         return metadata, [i for i in body.decode("utf-8").split("\n") if i != ""]
 
     # TODO optional other commands
