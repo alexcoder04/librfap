@@ -13,6 +13,7 @@ class Client:
         self.ENDIANESS = "big"
         self.SERVER_ADDRESS = server_address
         self.PORT = port
+        self.WAIT_FOR_RESPONSE = 0.1
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
             self.socket.connect((self.SERVER_ADDRESS, self.PORT))
@@ -85,12 +86,12 @@ class Client:
     # IMPLEMENTATION OF RFAP COMMANDS
     def rfap_ping(self) -> None:
         self.send_command(CMD_PING, {})
-        time.sleep(0.2)
+        time.sleep(self.WAIT_FOR_RESPONSE)
         self.recv_command()
 
     def rfap_disconnect(self) -> None:
         self.send_command(CMD_DISCONNECT, {})
-        time.sleep(0.2)
+        time.sleep(self.WAIT_FOR_RESPONSE)
         self.socket.close()
 
     def rfap_info(self, path: str, verbose: bool = False) -> dict:
@@ -99,16 +100,16 @@ class Client:
         else:
             requireDetails = []
         self.send_command(CMD_INFO, {"Path": path, "RequestDetails": requireDetails})
-        time.sleep(0.2)
+        time.sleep(self.WAIT_FOR_RESPONSE)
         _, _, metadata, _, _, _ = self.recv_command()
         return metadata
 
     def rfap_file_read(self, path: str):
         self.send_command(CMD_FILE_READ, {"Path": path})
-        time.sleep(0.2)
+        time.sleep(self.WAIT_FOR_RESPONSE)
         _, _, metadata, _, body, _ = self.recv_command()
         if metadata["ErrorCode"] != 0:
-            return metadata, None
+            return metadata, b""
         return metadata, body
 
     def rfap_directory_read(self, path: str, verbose: bool = False):
@@ -117,7 +118,7 @@ class Client:
         else:
             requireDetails = []
         self.send_command(CMD_DIRECTORY_READ, {"Path": path, "RequestDetails": requireDetails})
-        time.sleep(0.2)
+        time.sleep(self.WAIT_FOR_RESPONSE)
         _, _, metadata, _, body, _ = self.recv_command()
         if metadata["ErrorCode"] != 0:
             return metadata, []

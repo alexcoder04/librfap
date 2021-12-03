@@ -1,9 +1,16 @@
 
 # librfap
 
-proof-of-concept file transfer protocol - client side.
+Client-side Python library for the rfap protocol.
+
+See [here](#related-projects) for protocol specifications and other compatible
+programs.
 
 ## Installation
+
+### Stable release with pip
+
+**Coming soon**
 
 ### Latest version from this repo with pip
 
