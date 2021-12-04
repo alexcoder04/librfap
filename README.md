@@ -28,5 +28,5 @@ pip3 install ./librfap
  - https://github.com/alexcoder04/rfap - general specification
  - https://github.com/alexcoder04/rfap-pycli - CLI client based on this library
  - https://github.com/alexcoder04/rfap-go-server - server side
- - https://github.com/BoettcherDasOriginal/rfab-cs-lib - C# client library
+ - https://github.com/BoettcherDasOriginal/rfap-cs-lib - C# client library
 
