@@ -1,6 +1,14 @@
 
 # librfap
 
+[![GitHub release (latest SemVer including pre-releases)](https://img.shields.io/github/v/release/alexcoder04/librfap?include_prereleases)](https://github.com/alexcoder04/librfap/releases/latest)
+[![GitHub top language](https://img.shields.io/github/languages/top/alexcoder04/librfap)](https://github.com/alexcoder04/librfap/search?l=python)
+[![GitHub](https://img.shields.io/github/license/alexcoder04/librfap)](https://github.com/alexcoder04/librfap/blob/main/LICENSE)
+[![GitHub issues](https://img.shields.io/github/issues/alexcoder04/librfap)](https://github.com/alexcoder04/librfap/issues)
+[![GitHub pull requests](https://img.shields.io/github/issues-pr/alexcoder04/librfap)](https://github.com/alexcoder04/librfap/pulls)
+[![GitHub commit activity](https://img.shields.io/github/commit-activity/m/alexcoder04/librfap)](https://github.com/alexcoder04/librfap/commits/main)
+[![GitHub contributors](https://img.shields.io/github/contributors-anon/alexcoder04/librfap)](https://github.com/alexcoder04/librfap/graphs/contributors)
+
 Client-side Python library for the rfap protocol.
 
 See [here](#related-projects) for protocol specifications and other compatible
