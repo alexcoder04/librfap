@@ -50,18 +50,20 @@ class Client:
 
     def _recv_command(self):
         # receive everything
-        data = self.socket.recv(2+4+(16*1024*1024)+4+(16*1024*1024))
+        data = self.socket.recv(2+4+(8*1024)+4+(16*1024*1024))
 
         # version
         version = self.bytes_to_int(data[:2])
         if version not in self.SUPPORTED_VERSIONS:
-            self.socket.close()
+            self.rfap_disconnect()
             raise Exception(f"trying to receive packet of unsupported version (v{version})")
 
         # header
         header_length = self.bytes_to_int(data[2 : 2+4])
         command = self.bytes_to_int(data[2+4 : 2+4+4])
         header_raw = data[2+4+4 : 2+4+(header_length-32)]
+        if header_raw[-1] == 0x00:
+            header_raw = header_raw.strip((0x00).to_bytes(1, "big"))
         try:
             metadata = yaml.load(header_raw, Loader=yaml.SafeLoader)
         except Exception as e:
@@ -101,7 +103,7 @@ class Client:
             metadata["PacketsTotal"] = 1
             self._send_command(command, metadata, body)
             return
-        if len(body) <= self.MAX_CONTENT_SIZE:
+        if len(body) <= self.MAX_CONTENT_SIZE-32:
             metadata["PacketNumber"] = 1
             metadata["PacketsTotal"] = 1
             self._send_command(command, metadata, body)
@@ -109,11 +111,11 @@ class Client:
         i = 0
         packets = []
         while True:
-            if (i + self.MAX_CONTENT_SIZE) >= len(body):
+            if (i + self.MAX_CONTENT_SIZE-32) >= len(body):
                 packets.append((command, metadata, body[i:]))
                 break
-            packets.append((command, metadata, body[i : (i+self.MAX_CONTENT_SIZE)]))
-            i += self.MAX_CONTENT_SIZE
+            packets.append((command, metadata, body[i : (i+self.MAX_CONTENT_SIZE-32)]))
+            i += self.MAX_CONTENT_SIZE-32
         metadata["PacketsTotal"] = len(packets)
         for i, p in enumerate(packets):
             metadata["PacketNumber"] = i + 1
