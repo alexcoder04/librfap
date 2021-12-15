@@ -8,8 +8,8 @@ from .commands import *
 
 class Client:
     def __init__(self, server_address: str, port: int = 6700):
-        self.VERSION = 1
-        self.SUPPORTED_VERSIONS = [1]
+        self.VERSION = 2
+        self.SUPPORTED_VERSIONS = [2]
         self.ENDIANESS = "big"
         self.SERVER_ADDRESS = server_address
         self.PORT = port
@@ -87,7 +87,9 @@ class Client:
 
         # body
         body_length = self.bytes_to_int(self.socket.recv(4))
-        body = self.socket.recv(body_length)
+        body = b""
+        while len(body) < body_length:
+            body += self.socket.recv(self.MAX_BYTES_SENT_AT_ONCE)
         body_checksum = body[-32:]
         _ = body_checksum
 
