@@ -66,38 +66,32 @@ class Client:
             i += self.MAX_BYTES_SENT_AT_ONCE
 
     def recv_packet(self):
-        # TODO recv each part individually
-        # receive everything
-        data = self.socket.recv(2+4+(8*1024)+4+(16*1024*1024))
-
         # version
-        version = self.bytes_to_int(data[:2])
+        version = self.bytes_to_int(self.socket.recv(2))
         if version not in self.SUPPORTED_VERSIONS:
             self.rfap_disconnect()
             raise Exception(f"trying to receive packet of unsupported version (v{version})")
 
         # header
-        header_length = self.bytes_to_int(data[2 : 2+4])
-        command = self.bytes_to_int(data[2+4 : 2+4+4])
-        header_raw = data[2+4+4 : 2+4+(header_length-32)]
-        if header_raw[-1] == 0x00:
-            header_raw = header_raw.strip((0x00).to_bytes(1, "big"))
+        header_length = self.bytes_to_int(self.socket.recv(4))
+        header_raw = self.socket.recv(header_length)
+        command = self.bytes_to_int(header_raw[:4])
         try:
-            metadata = yaml.load(header_raw, Loader=yaml.SafeLoader)
+            metadata = yaml.load(header_raw[4:-32], Loader=yaml.SafeLoader)
         except Exception as e:
             print(e)
             print("ERROR DECODING HEADER!")
             return version, command, {}, b""
-        header_checksum = data[2+4+(header_length-32) : 2+4+header_length]
+        header_checksum = header_raw[-32:]
         _ = header_checksum
 
         # body
-        body_length = self.bytes_to_int(data[2+4+header_length : 2+4+header_length+4])
-        body = data[2+4+header_length+4 : 2+4+header_length+4+(body_length-32)]
-        body_checksum = data[2+4+header_length+4+(body_length-32) : 2+4+header_length+4+body_length]
+        body_length = self.bytes_to_int(self.socket.recv(4))
+        body = self.socket.recv(body_length)
+        body_checksum = body[-32:]
         _ = body_checksum
 
-        return version, command, metadata, body
+        return version, command, metadata, body[:-32]
 
     # HELPER FUNCTIONS
     def int_to_bytes(self, value: int, bytes_number: int = 4) -> bytes:
