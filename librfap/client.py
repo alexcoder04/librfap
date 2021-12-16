@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-import sys
 import socket
 import yaml
 import time
@@ -11,27 +10,26 @@ class Client:
         self.VERSION = 2
         self.SUPPORTED_VERSIONS = [2]
         self.ENDIANESS = "big"
-        self.SERVER_ADDRESS = server_address
-        self.PORT = port
         self.WAIT_FOR_RESPONSE = 0.1
-        self.MAX_CONTENT_SIZE = 16*1024*1024
         self.MAX_HEADER_LEN = 8*1024
         self.MAX_BYTES_SENT_AT_ONCE = 16*1024
+
+        self.SERVER_ADDRESS = server_address
+        self.PORT = port
+
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
             self.socket.connect((self.SERVER_ADDRESS, self.PORT))
-        except ConnectionRefusedError:
+        except ConnectionRefusedError as e:
             print("Error: This server seems not to be online")
-            sys.exit(1)
+            raise e
 
     # BASIC FUNCTIONS
     def send_packet(self, command: int, metadata: dict, body: bytes = None) -> None:
-        # means all header data
-        all_data = b""
-        # version
-        all_data += self.int_to_bytes(self.VERSION, 2)
+        header_data = b""
 
-        # encode header
+        header_data += self.int_to_bytes(self.VERSION, 2)
+
         header = b""
         header += self.int_to_bytes(command, 4)
         header += yaml.dump(metadata).encode("utf-8")
@@ -39,11 +37,10 @@ class Client:
         if len(header) > self.MAX_HEADER_LEN:
             raise Exception("header too long")
 
-        # header
-        all_data += self.int_to_bytes(len(header), 4)
-        all_data += header
+        header_data += self.int_to_bytes(len(header), 4)
+        header_data += header
 
-        self.socket.send(all_data)
+        self.socket.send(header_data)
 
         # body
         body_data = b""
