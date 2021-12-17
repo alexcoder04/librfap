@@ -3,6 +3,7 @@
 librfap - client library for rfap
 """
 
-__version__ = "pre-alpha"
+__version__ = "0.2.1"
 
 from .client import Client
+

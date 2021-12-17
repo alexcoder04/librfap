@@ -23,8 +23,11 @@ LOCATION=$(curl -s https://api.github.com/repos/alexcoder04/librfap/releases/lat
     | grep "tag_name" \
     | awk '{print "https://github.com/alexcoder04/librfap/archive/" substr($2, 2, length($2)-3) ".zip"}')
 curl -L -o "${TMPDIR:-/tmp}/librfap.zip" "$LOCATION"
-pip install "${TMPDIR:-/tmp}/librfap.zip"
+pip3 install "${TMPDIR:-/tmp}/librfap.zip"
 ```
+
+Or download and install manually from the [releases
+page](https://github.com/alexcoder04/librfap/releases/latest).
 
 ### Latest version from this repo with pip
 
