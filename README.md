@@ -18,11 +18,17 @@ programs.
 
 ### Stable release with pip
 
-**Coming soon**
+```sh
+LOCATION=$(curl -s https://api.github.com/repos/alexcoder04/librfap/releases/latest \
+    | grep "tag_name" \
+    | awk '{print "https://github.com/alexcoder04/librfap/archive/" substr($2, 2, length($2)-3) ".zip"}')
+curl -L -o "${TMPDIR:-/tmp}/librfap.zip" "$LOCATION"
+pip install "${TMPDIR:-/tmp}/librfap.zip"
+```
 
 ### Latest version from this repo with pip
 
-```
+```sh
 git clone https://github.com/alexcoder04/librfap
 pip3 install ./librfap
 ```
