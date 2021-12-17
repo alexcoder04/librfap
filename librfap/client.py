@@ -100,6 +100,7 @@ class Client:
         return int.from_bytes(value, self.ENDIANESS)
 
     # IMPLEMENTATION OF RFAP COMMANDS
+    # server commands
     def rfap_ping(self) -> None:
         self.send_packet(CMD_PING, {})
         time.sleep(self.WAIT_FOR_RESPONSE)
@@ -120,6 +121,7 @@ class Client:
         _, _, metadata, _, = self.recv_packet()
         return metadata
 
+    # file commands
     def rfap_file_read(self, path: str):
         self.send_packet(CMD_FILE_READ, {"Path": path})
         time.sleep(self.WAIT_FOR_RESPONSE)
@@ -128,6 +130,42 @@ class Client:
             return metadata, b""
         return metadata, body
 
+    def rfap_file_delete(self, path: str):
+        self.send_packet(CMD_FILE_DELETE, {"Path": path})
+        time.sleep(self.WAIT_FOR_RESPONSE)
+        _, _, metadata, _ = self.recv_packet()
+        if metadata["ErrorCode"] != 0:
+            raise Exception(f"Cannot delete file {path}")
+
+    def rfap_file_create(self, path: str):
+        self.send_packet(CMD_FILE_CREATE, {"Path": path})
+        time.sleep(self.WAIT_FOR_RESPONSE)
+        _, _, metadata, _ = self.recv_packet()
+        if metadata["ErrorCode"] != 0:
+            raise Exception(f"Cannot create file {path}")
+
+    def rfap_file_copy(self, source: str, destin: str):
+        self.send_packet(CMD_FILE_COPY, {"Path": source, "Destination": destin})
+        time.sleep(self.WAIT_FOR_RESPONSE)
+        _, _, metadata, _ = self.recv_packet()
+        if metadata["ErrorCode"] != 0:
+            raise Exception(f"Cannot copy {source} to {destin}")
+
+    def rfap_file_move(self, source: str, destin: str):
+        self.send_packet(CMD_FILE_MOVE, {"Path": source, "Destination": destin})
+        time.sleep(self.WAIT_FOR_RESPONSE)
+        _, _, metadata, _ = self.recv_packet()
+        if metadata["ErrorCode"] != 0:
+            raise Exception(f"Cannot move {source} to {destin}")
+
+    def rfap_file_write(self, path: str, data: bytes):
+        self.send_packet(CMD_FILE_WRITE, {"Path": path}, data)
+        time.sleep(self.WAIT_FOR_RESPONSE)
+        _, _, metadata, _ = self.recv_packet()
+        if metadata["ErrorCode"] != 0:
+            raise Exception(f"cannot write file {path}")
+
+    # directory commands
     def rfap_directory_read(self, path: str, verbose: bool = False):
         if verbose:
             requireDetails = ["DirectorySize", "ElementsNumber"]
@@ -140,5 +178,31 @@ class Client:
             return metadata, []
         return metadata, [i for i in body.decode("utf-8").split("\n") if i != ""]
 
-    # TODO optional other commands
+    def rfap_directory_delete(self, path: str):
+        self.send_packet(CMD_DIRECTORY_DELETE, {"Path": path})
+        time.sleep(self.WAIT_FOR_RESPONSE)
+        _, _, metadata, _ = self.recv_packet()
+        if metadata["ErrorCode"] != 0:
+            raise Exception(f"Cannot delete dir {path}")
+
+    def rfap_directory_create(self, path: str):
+        self.send_packet(CMD_DIRECTORY_CREATE, {"Path": path})
+        time.sleep(self.WAIT_FOR_RESPONSE)
+        _, _, metadata, _ = self.recv_packet()
+        if metadata["ErrorCode"] != 0:
+            raise Exception(f"Cannot create dir {path}")
+
+    def rfap_directory_copy(self, source: str, destin: str):
+        self.send_packet(CMD_DIRECTORY_COPY, {"Path": source, "Destination": destin})
+        time.sleep(self.WAIT_FOR_RESPONSE)
+        _, _, metadata, _ = self.recv_packet()
+        if metadata["ErrorCode"] != 0:
+            raise Exception(f"Cannot copy {source} to {destin}")
+
+    def rfap_directory_move(self, source: str, destin: str):
+        self.send_packet(CMD_DIRECTORY_MOVE, {"Path": source, "Destination": destin})
+        time.sleep(self.WAIT_FOR_RESPONSE)
+        _, _, metadata, _ = self.recv_packet()
+        if metadata["ErrorCode"] != 0:
+            raise Exception(f"Cannot move {source} to {destin}")
 
