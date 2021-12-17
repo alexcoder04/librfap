@@ -4,6 +4,7 @@ import socket
 import yaml
 import time
 from .commands import *
+from .exceptions import *
 
 class Client:
     def __init__(self, server_address: str, port: int = 6700):
@@ -16,13 +17,14 @@ class Client:
 
         self.SERVER_ADDRESS = server_address
         self.PORT = port
+        self.alive = True
 
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
             self.socket.connect((self.SERVER_ADDRESS, self.PORT))
-        except ConnectionRefusedError as e:
-            print("Error: This server seems not to be online")
-            raise e
+        except ConnectionRefusedError:
+            self.fatal_crash("server seems not to be online")
+            raise
 
     # BASIC FUNCTIONS
     def send_packet(self, command: int, metadata: dict, body: bytes = None) -> None:
@@ -35,7 +37,7 @@ class Client:
         header += yaml.dump(metadata).encode("utf-8")
         header += self.int_to_bytes(0, 32)
         if len(header) > self.MAX_HEADER_LEN:
-            raise Exception("header too long")
+            raise InvalidHeaderLengthError(len(header))
 
         header_data += self.int_to_bytes(len(header), 4)
         header_data += header
@@ -66,8 +68,8 @@ class Client:
         # version
         version = self.bytes_to_int(self.socket.recv(2))
         if version not in self.SUPPORTED_VERSIONS:
-            self.rfap_disconnect()
-            raise Exception(f"trying to receive packet of unsupported version (v{version})")
+            self.fatal_crash("invalid rfap version")
+            raise UnsupportedRfapVersionError(version)
 
         # header
         header_length = self.bytes_to_int(self.socket.recv(4))
@@ -76,9 +78,7 @@ class Client:
         try:
             metadata = yaml.load(header_raw[4:-32], Loader=yaml.SafeLoader)
         except Exception as e:
-            print(e)
-            print("ERROR DECODING HEADER!")
-            return version, command, {}, b""
+            raise HeaderDecodeError(e)
         header_checksum = header_raw[-32:]
         _ = header_checksum
 
@@ -99,12 +99,19 @@ class Client:
     def bytes_to_int(self, value: bytes) -> int:
         return int.from_bytes(value, self.ENDIANESS)
 
+    def fatal_crash(self, message: str = ""):
+        print(f"ERROR: librfap crashed: {message}")
+        self.socket.close()
+        self.alive = False
+
     # IMPLEMENTATION OF RFAP COMMANDS
     # server commands
     def rfap_ping(self) -> None:
         self.send_packet(CMD_PING, {})
         time.sleep(self.WAIT_FOR_RESPONSE)
-        self.recv_packet()
+        _, _, metadata, _ = self.recv_packet()
+        if metadata["ErrorCode"] != 0:
+            raise # TODO
 
     def rfap_disconnect(self) -> None:
         self.send_packet(CMD_DISCONNECT, {})
