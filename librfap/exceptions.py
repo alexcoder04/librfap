@@ -25,3 +25,13 @@ class InvalidHeaderLengthError(Exception):
     def __str__(self):
         return f"{self.message}: {self.header_length}"
 
+class ChecksumError(Exception):
+    def __init__(self, got, expected):
+        self.got = got
+        self.expected = expected
+        self.message = "checksums don't match"
+        super().__init__(self.message)
+
+    def __str__(self):
+        return f"{self.message}: expected {self.expected}, got {self.got}"
+

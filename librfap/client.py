@@ -37,7 +37,7 @@ class Client:
             raise InvalidHeaderLengthError(len(command_bytes+metadata_bytes+checksum))
 
         header_data = self.int_to_bytes(self.VERSION, 2)\
-                + self.int_to_bytes(len(command_bytes+metadata_bytes))\
+                + self.int_to_bytes(len(command_bytes+metadata_bytes+checksum), 4)\
                 + command_bytes + metadata_bytes + checksum
 
         self.socket.send(header_data)
@@ -78,7 +78,9 @@ class Client:
         except Exception as e:
             raise HeaderDecodeError(e)
         header_checksum = header_raw[-32:]
-        _ = header_checksum
+        header_checksum_expected = hashlib.sha256(header_raw[:-32]).digest()
+        if header_checksum != header_checksum_expected:
+            raise ChecksumError(header_checksum_expected, header_checksum)
 
         # body
         body_length = self.bytes_to_int(self.socket.recv(4))
@@ -86,7 +88,9 @@ class Client:
         while len(body) < body_length:
             body += self.socket.recv(self.MAX_BYTES_SENT_AT_ONCE)
         body_checksum = body[-32:]
-        _ = body_checksum
+        body_checksum_expected = hashlib.sha256(body[:-32]).digest()
+        if body_checksum != body_checksum_expected:
+            raise ChecksumError(body_checksum_expected, body_checksum)
 
         return version, command, metadata, body[:-32]
 
