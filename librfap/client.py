@@ -46,11 +46,11 @@ class Client:
         body_data = b""
         if body is None:
             body_len = self.int_to_bytes(32, 4)
-            body_data += self.int_to_bytes(0, 32)
         else:
             body_len = self.int_to_bytes(len(body)+32, 4)
             body_data += body
-            body_data += self.int_to_bytes(0, 32)
+        bodyChecksum = hashlib.sha256(body_data[4:]).digest()
+        body_data += bodyChecksum
 
         self.socket.send(body_len)
 
