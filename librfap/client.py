@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 
-import socket
-import yaml
-import time
 from .commands import *
 from .exceptions import *
+import hashlib
+import socket
+import time
+import yaml
 
 class Client:
     def __init__(self, server_address: str, port: int = 6700):
@@ -28,19 +29,16 @@ class Client:
 
     # BASIC FUNCTIONS
     def send_packet(self, command: int, metadata: dict, body: bytes = None) -> None:
-        header_data = b""
+        command_bytes = self.int_to_bytes(command, 4)
+        metadata_bytes = yaml.dump(metadata).encode("utf-8")
+        checksum = hashlib.sha256(command_bytes + metadata_bytes).digest()
 
-        header_data += self.int_to_bytes(self.VERSION, 2)
+        if len(command_bytes+metadata_bytes+checksum) > self.MAX_HEADER_LEN:
+            raise InvalidHeaderLengthError(len(command_bytes+metadata_bytes+checksum))
 
-        header = b""
-        header += self.int_to_bytes(command, 4)
-        header += yaml.dump(metadata).encode("utf-8")
-        header += self.int_to_bytes(0, 32)
-        if len(header) > self.MAX_HEADER_LEN:
-            raise InvalidHeaderLengthError(len(header))
-
-        header_data += self.int_to_bytes(len(header), 4)
-        header_data += header
+        header_data = self.int_to_bytes(self.VERSION, 2)\
+                + self.int_to_bytes(len(command_bytes+metadata_bytes))\
+                + command_bytes + metadata_bytes + checksum
 
         self.socket.send(header_data)
 
