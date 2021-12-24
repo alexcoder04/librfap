@@ -2,11 +2,17 @@
 class UnsupportedRfapVersionError(Exception):
     def __init__(self, version):
         self.version = version
-        self.message = "Unsupported rfap version"
-        super().__init__(self.message)
+        super().__init__()
 
     def __str__(self):
-        return f"{self.message}: {self.version}"
+        return f"Unsupported rfap version: {self.version}"
+
+class ServerError(Exception):
+    def __init__(self):
+        super().__init__()
+
+    def __str__(self):
+        return "Server sent error"
 
 class HeaderDecodeError(Exception):
     def __init__(self, parent_exception):
@@ -19,19 +25,17 @@ class HeaderDecodeError(Exception):
 class InvalidHeaderLengthError(Exception):
     def __init__(self, header_length):
         self.header_length = header_length
-        self.message = "Header is too long"
-        super().__init__(self.message)
+        super().__init__()
 
     def __str__(self):
-        return f"{self.message}: {self.header_length}"
+        return f"Invalid header length: {self.header_length}"
 
 class ChecksumError(Exception):
     def __init__(self, got, expected):
         self.got = got
         self.expected = expected
-        self.message = "checksums don't match"
-        super().__init__(self.message)
+        super().__init__()
 
     def __str__(self):
-        return f"{self.message}: expected {self.expected}, got {self.got}"
+        return f"checksums don't match: expected {self.expected}, got {self.got}"
 
