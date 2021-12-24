@@ -9,8 +9,8 @@ import yaml
 
 class Client:
     def __init__(self, server_address: str, port: int = 6700):
-        self.VERSION = 2
-        self.SUPPORTED_VERSIONS = [2]
+        self.VERSION = 3
+        self.SUPPORTED_VERSIONS = [3]
         self.ENDIANESS = "big"
         self.WAIT_FOR_RESPONSE = 0.1
         self.MAX_HEADER_LEN = 8*1024
@@ -43,18 +43,15 @@ class Client:
         self.socket.send(header_data)
 
         # body
-        body_data = b""
         if body is None:
-            body_len = self.int_to_bytes(32, 4)
-        else:
-            body_len = self.int_to_bytes(len(body)+32, 4)
-            body_data += body
-        bodyChecksum = hashlib.sha256(body_data[4:]).digest()
-        body_data += bodyChecksum
+            body = b""
+        body_len = self.int_to_bytes(len(body)+32, 4)
+        body_checksum = hashlib.sha256(body).digest()
 
         self.socket.send(body_len)
 
         i = 0
+        body_data = body + body_checksum
         while True:
             if i+self.MAX_BYTES_SENT_AT_ONCE > len(body_data):
                 self.socket.send(body_data[i:])
@@ -73,6 +70,9 @@ class Client:
         header_length = self.bytes_to_int(self.socket.recv(4))
         header_raw = self.socket.recv(header_length)
         command = self.bytes_to_int(header_raw[:4])
+        if command == 0xffffffff:
+            self.fatal_crash("server sent error packet")
+            raise ServerError()
         try:
             metadata = yaml.load(header_raw[4:-32], Loader=yaml.SafeLoader)
         except Exception as e:
