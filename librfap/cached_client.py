@@ -1,8 +1,8 @@
 
-from .client import Client
+from .base_client import BaseClient
 import time
 
-class CachedClient(Client):
+class CachedClient(BaseClient):
     def __init__(self, server_address: str, port: int = 6700, cache_timeout: tuple = (60, 60, 60)):
         (self.CACHE_INFO_TIMEOUT, self.CACHE_DIRS_TIMEOUT, self.CACHE_FILES_TIMEOUT) = cache_timeout
         self.cache_info = {}

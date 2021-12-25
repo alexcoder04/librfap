@@ -5,6 +5,6 @@ librfap - client library for rfap
 
 __version__ = "0.3.0"
 
-from .client import Client
+from .base_client import BaseClient
 from .cached_client import CachedClient
 

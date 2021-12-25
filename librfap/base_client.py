@@ -7,7 +7,7 @@ import socket
 import time
 import yaml
 
-class Client:
+class BaseClient:
     def __init__(self, server_address: str, port: int = 6700):
         self.VERSION = 3
         self.SUPPORTED_VERSIONS = [3]
